@@ -177,70 +177,72 @@ export default function SettingsDrawer({
           </section>
 
           {/* room */}
-          <section className="space-y-3 border-t border-zinc-800 pt-4">
-            <h3 className={sectionTitle}>Online room</h3>
+          {online ? (
+            <section className="space-y-3 border-t border-zinc-800 pt-4">
+              <h3 className={sectionTitle}>Online room</h3>
 
-            <div>
-              <label className={fieldLabel} htmlFor="room-id">
-                Your room
-              </label>
-              <div className="mt-2 flex items-center gap-2">
-                <input
-                  id="room-id"
-                  type="text"
-                  readOnly
-                  value={roomId ?? ""}
-                  placeholder="—"
-                  className="gamer-input"
-                />
-                <button
-                  id="create-room-button"
-                  type="button"
-                  disabled={!online || !!roomId || running || busy}
-                  onClick={onCreateRoom}
-                  className="shrink-0 rounded-lg border border-emerald-500/60 px-3 py-2 text-xs font-bold uppercase tracking-widest text-emerald-300 transition hover:bg-emerald-400/10 hover:shadow-[0_0_14px_rgba(16,185,129,0.35)] active:scale-95 disabled:pointer-events-none disabled:opacity-30"
-                >
-                  Create
-                </button>
+              <div>
+                <label className={fieldLabel} htmlFor="room-id">
+                  Your room
+                </label>
+                <div className="mt-2 flex items-center gap-2">
+                  <input
+                    id="room-id"
+                    type="text"
+                    readOnly
+                    value={roomId ?? ""}
+                    placeholder="—"
+                    className="gamer-input"
+                  />
+                  <button
+                    id="create-room-button"
+                    type="button"
+                    disabled={!online || !!roomId || running || busy}
+                    onClick={onCreateRoom}
+                    className="shrink-0 rounded-lg border border-emerald-500/60 px-3 py-2 text-xs font-bold uppercase tracking-widest text-emerald-300 transition hover:bg-emerald-400/10 hover:shadow-[0_0_14px_rgba(16,185,129,0.35)] active:scale-95 disabled:pointer-events-none disabled:opacity-30"
+                  >
+                    Create
+                  </button>
+                </div>
               </div>
-            </div>
 
-            <div>
-              <label className={fieldLabel} htmlFor="room-id-input">
-                Join room
-              </label>
-              <div className="mt-2 flex items-center gap-2">
-                <input
-                  id="room-id-input"
-                  type="text"
-                  value={roomToJoin}
-                  onChange={(e) => onRoomToJoinChange(e.target.value)}
-                  placeholder="ROOM ID"
-                  disabled={!online}
-                  className="gamer-input"
-                />
-                <button
-                  id="join-room-button"
-                  type="button"
-                  disabled={!online || !!roomId || running || busy}
-                  onClick={onJoinRoom}
-                  className="shrink-0 rounded-lg border border-cyan-500/60 px-3 py-2 text-xs font-bold uppercase tracking-widest text-cyan-300 transition hover:bg-cyan-400/10 hover:shadow-[0_0_14px_rgba(34,211,238,0.35)] active:scale-95 disabled:pointer-events-none disabled:opacity-30"
-                >
-                  Join
-                </button>
+              <div>
+                <label className={fieldLabel} htmlFor="room-id-input">
+                  Join room
+                </label>
+                <div className="mt-2 flex items-center gap-2">
+                  <input
+                    id="room-id-input"
+                    type="text"
+                    value={roomToJoin}
+                    onChange={(e) => onRoomToJoinChange(e.target.value)}
+                    placeholder="ROOM ID"
+                    disabled={!online}
+                    className="gamer-input"
+                  />
+                  <button
+                    id="join-room-button"
+                    type="button"
+                    disabled={!online || !!roomId || running || busy}
+                    onClick={onJoinRoom}
+                    className="shrink-0 rounded-lg border border-cyan-500/60 px-3 py-2 text-xs font-bold uppercase tracking-widest text-cyan-300 transition hover:bg-cyan-400/10 hover:shadow-[0_0_14px_rgba(34,211,238,0.35)] active:scale-95 disabled:pointer-events-none disabled:opacity-30"
+                  >
+                    Join
+                  </button>
+                </div>
               </div>
-            </div>
 
-            <button
-              id="leave-room-button"
-              type="button"
-              disabled={!roomId || busy}
-              onClick={onLeaveRoom}
-              className="w-full rounded-lg border border-rose-500/50 px-3 py-2 text-xs font-bold uppercase tracking-widest text-rose-300 transition hover:bg-rose-500/10 hover:shadow-[0_0_14px_rgba(244,63,94,0.3)] active:scale-95 disabled:pointer-events-none disabled:opacity-30"
-            >
-              Leave room
-            </button>
-          </section>
+              <button
+                id="leave-room-button"
+                type="button"
+                disabled={!roomId || busy}
+                onClick={onLeaveRoom}
+                className="w-full rounded-lg border border-rose-500/50 px-3 py-2 text-xs font-bold uppercase tracking-widest text-rose-300 transition hover:bg-rose-500/10 hover:shadow-[0_0_14px_rgba(244,63,94,0.3)] active:scale-95 disabled:pointer-events-none disabled:opacity-30"
+              >
+                Leave room
+              </button>
+            </section>
+          ) : null}
         </div>
 
         <div className="border-t border-zinc-800 px-4 py-3 text-center text-[10px] uppercase tracking-[0.3em] text-zinc-600">

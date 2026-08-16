@@ -1,5 +1,10 @@
 import Room from "./Room.js";
-import type { GameSettings, GameState, RoomResponse } from "./game/types.js";
+import type {
+  GameSettings,
+  GameState,
+  RoomResponse,
+  RoomSummary,
+} from "./game/types.js";
 
 export default class Lobby {
   private rooms = new Map<string, Room>();
@@ -14,6 +19,17 @@ export default class Lobby {
 
   getRoom(roomId: string): Room | undefined {
     return this.rooms.get(roomId);
+  }
+
+  listRooms(): RoomSummary[] {
+    return Array.from(this.rooms.values()).map((room) => ({
+      roomId: room.roomId,
+      ownerId: room.ownerId,
+      players: room.game.snakes.map((snake) => snake.playerId),
+      numberOfPlayers: room.game.numberOfPlayers,
+      numberOfApples: room.game.numberOfApples,
+      speed: room.speed,
+    }));
   }
 
   createRoom(gameSettings: GameSettings): string {

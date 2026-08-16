@@ -1,6 +1,6 @@
 "use client";
 
-import { GearIcon, SnakeIcon } from "./icons";
+import { GearIcon, RoomsIcon, SnakeIcon } from "./icons";
 
 interface HUDProps {
   online: boolean;
@@ -10,6 +10,7 @@ interface HUDProps {
   onStart: () => void;
   onStop: () => void;
   onToggleSettings: () => void;
+  onBrowseRooms: () => void;
 }
 
 export default function HUD({
@@ -20,6 +21,7 @@ export default function HUD({
   onStart,
   onStop,
   onToggleSettings,
+  onBrowseRooms,
 }: HUDProps) {
   return (
     <header className="flex items-center justify-between gap-3 border-b border-zinc-800/80 bg-zinc-950/70 px-3 py-2.5 backdrop-blur sm:px-5">
@@ -39,11 +41,22 @@ export default function HUD({
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
+        {online ? (
+          <button
+            id="rooms-button"
+            type="button"
+            aria-label="Browse rooms"
+            onClick={onBrowseRooms}
+            className="rounded-lg border border-cyan-500/60 p-2 text-cyan-300 transition hover:bg-cyan-400/10 hover:shadow-[0_0_14px_rgba(34,211,238,0.3)] active:scale-95"
+          >
+            <RoomsIcon className="h-5 w-5" />
+          </button>
+        ) : null}
         <button
           id="start-button"
           type="button"
           onClick={onStart}
-          disabled={running}
+          disabled={running || (online && !roomId)}
           className="rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-400 px-4 py-2 font-display text-xs font-bold uppercase tracking-widest text-emerald-950 shadow-[0_0_14px_rgba(16,185,129,0.35)] transition hover:shadow-[0_0_22px_rgba(16,185,129,0.6)] active:scale-95 disabled:pointer-events-none disabled:opacity-30 sm:px-5"
         >
           Start

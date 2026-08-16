@@ -1,13 +1,16 @@
 export default class SwipeGestureListener {
   SWIPE_MIN_LENGTH = 10;
+  DOUBLE_TAP_MS = 300;
   startX = 0;
   startY = 0;
   endX = 0;
   endY = 0;
+  lastTapTime: number | null = null;
 
   listen(
     event: TouchEvent,
-    swipeGestureHandler?: (direction: string) => void
+    swipeGestureHandler?: (direction: string) => void,
+    tapGestureHandler?: () => void
   ) {
     if (event.type === "touchstart") {
       this.startX = event.touches[0].clientX;
@@ -18,7 +21,31 @@ export default class SwipeGestureListener {
       if (swipeGestureHandler) {
         this.handleSwipe(swipeGestureHandler);
       }
+      if (tapGestureHandler) {
+        this.handleTap(tapGestureHandler);
+      }
     }
+  }
+
+  isTap(): boolean {
+    const xDiff = this.endX - this.startX;
+    const yDiff = this.endY - this.startY;
+    const swipeLength = Math.sqrt(xDiff * xDiff + yDiff * yDiff);
+    return swipeLength <= this.SWIPE_MIN_LENGTH;
+  }
+
+  handleTap(tapGestureHandler: () => void) {
+    if (!this.isTap()) return;
+    const now = Date.now();
+    if (
+      this.lastTapTime !== null &&
+      now - this.lastTapTime <= this.DOUBLE_TAP_MS
+    ) {
+      this.lastTapTime = null;
+      tapGestureHandler();
+      return;
+    }
+    this.lastTapTime = now;
   }
 
   handleSwipe(swipeGestureHandler: (direction: string) => void) {

@@ -109,6 +109,10 @@ function stopRoomTimer(roomId: string) {
   }
 }
 
+function broadcastRoomList() {
+  io.emit("roomListChanged", lobby.listRooms());
+}
+
 function leaveSocketRoom(roomId: string | null, playerId: string, socket: Socket) {
   if (roomId == null) return;
   lobby.leaveRoom(roomId, playerId);
@@ -151,6 +155,7 @@ io.on("connection", function (socket) {
 
     // emit room id
     socket.emit("createRoom", joinRoomResponse);
+    broadcastRoomList();
     console.log(
       `${joinRoomResponse.playerId} created room ${roomId}`
     );
@@ -175,6 +180,7 @@ io.on("connection", function (socket) {
       socket.emit("gameState", lobby.getState(response.roomId as string));
     }
     socket.emit("joinRoom", response);
+    broadcastRoomList();
     console.log(`${response.playerId} joined room ${data.roomId}`);
   });
 
@@ -183,7 +189,13 @@ io.on("connection", function (socket) {
     leaveSocketRoom(data.roomId, data.playerId, socket);
     socketPlayerMap.delete(socket.id);
     socket.emit("leaveRoom", data);
+    broadcastRoomList();
     console.log(`${data.playerId} left room ${data.roomId}`);
+  });
+
+  // list rooms
+  socket.on("listRooms", function () {
+    socket.emit("listRooms", lobby.listRooms());
   });
 
   // update state
@@ -204,5 +216,6 @@ io.on("connection", function (socket) {
       leaveSocketRoom(entry.roomId, entry.playerId ?? "", socket);
       socketPlayerMap.delete(socket.id);
     }
+    broadcastRoomList();
   });
 });

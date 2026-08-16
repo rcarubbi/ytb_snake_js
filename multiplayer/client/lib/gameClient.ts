@@ -1,5 +1,10 @@
 import { io, type Socket } from "socket.io-client";
-import type { GameSettings, RoomResponse, GameState } from "@/lib/game/types";
+import type {
+  GameSettings,
+  RoomResponse,
+  GameState,
+  RoomSummary,
+} from "@/lib/game/types";
 
 const SOCKET_URL =
   process.env.NEXT_PUBLIC_SOCKET_URL ||
@@ -10,6 +15,7 @@ const SOCKET_URL =
     : "http://localhost:3000");
 
 let socket: Socket | null = null;
+let connectionPromise: Promise<string> | null = null;
 
 function asyncEmit<T>(eventName: string, data?: unknown): Promise<T> {
   return new Promise<T>((resolve) => {
@@ -24,7 +30,8 @@ function asyncEmit<T>(eventName: string, data?: unknown): Promise<T> {
 
 const gameClient = {
   connectAsync: async function (): Promise<string> {
-    const playerId = await new Promise<string>((resolve, reject) => {
+    if (connectionPromise) return connectionPromise;
+    connectionPromise = new Promise<string>((resolve, reject) => {
       try {
         socket = io(SOCKET_URL, {
           transports: ["websocket", "polling"],
@@ -33,22 +40,27 @@ const gameClient = {
           resolve(id);
         });
         socket.on("connect_error", (err: Error) => {
+          connectionPromise = null;
           reject(err);
         });
       } catch (e) {
+        connectionPromise = null;
         reject(e as Error);
       }
     });
-
-    return playerId;
+    return connectionPromise;
   },
 
   disconnectAsync: async function (): Promise<void> {
     await new Promise<void>((resolve) => {
       try {
         socket?.disconnect();
+        socket = null;
+        connectionPromise = null;
         resolve();
       } catch {
+        socket = null;
+        connectionPromise = null;
         resolve();
       }
     });
@@ -56,6 +68,14 @@ const gameClient = {
 
   onStateChange: function (callback: (state: GameState) => void) {
     socket?.on("gameState", callback);
+  },
+
+  onRoomListChanged: function (callback: (rooms: RoomSummary[]) => void) {
+    socket?.on("roomListChanged", callback);
+  },
+
+  listRooms: async function (): Promise<RoomSummary[]> {
+    return asyncEmit<RoomSummary[]>("listRooms");
   },
 
   createRoom: async function (gameSettings: GameSettings): Promise<RoomResponse> {

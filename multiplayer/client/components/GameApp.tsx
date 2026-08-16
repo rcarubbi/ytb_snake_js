@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import Game from "@/lib/game/Game";
 import KeyboardListener from "@/lib/listeners/KeyboardListener";
 import SwipeGestureListener from "@/lib/listeners/SwipeGestureListener";
@@ -9,11 +10,15 @@ import ScoreRenderer from "@/lib/renderers/ScoreRenderer";
 import AppleRenderer from "@/lib/renderers/AppleRenderer";
 import BombRenderer from "@/lib/renderers/BombRenderer";
 import gameClient from "@/lib/gameClient";
+import controls from "@/lib/game/controls";
 import type { GameState } from "@/lib/game/types";
 import HUD from "./HUD";
 import GameScreen from "./GameScreen";
 import SettingsDrawer from "./SettingsDrawer";
 import Toast, { type ToastData } from "./Toast";
+
+const PLAYER_NAME_KEY = "snake.playerName";
+const PENDING_JOIN_KEY = "snake.pendingJoin";
 
 interface Renderers {
   snake: SnakeRenderer;
@@ -23,11 +28,18 @@ interface Renderers {
 }
 
 export default function GameApp() {
-  const [online, setOnline] = useState(false);
+  const router = useRouter();
+  const [online, setOnline] = useState(true);
   const [speed, setSpeed] = useState(15);
   const [players, setPlayers] = useState(2);
   const [apples, setApples] = useState(1);
-  const [playerName, setPlayerName] = useState("");
+  const [playerName, setPlayerName] = useState(() => {
+    try {
+      return localStorage.getItem(PLAYER_NAME_KEY) ?? "";
+    } catch {
+      return "";
+    }
+  });
   const [roomToJoin, setRoomToJoin] = useState("");
   const [roomId, setRoomId] = useState<string | null>(null);
   const [playerId, setPlayerId] = useState<string | null>(null);
@@ -80,6 +92,14 @@ export default function GameApp() {
   useEffect(() => {
     playerIdRef.current = playerId;
   }, [playerId]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(PLAYER_NAME_KEY, playerName);
+    } catch {
+      // ignore
+    }
+  }, [playerName]);
 
   const showToast = useCallback((message: string, type: "error" | "info" = "error") => {
     setToast({ message, type });
@@ -308,6 +328,45 @@ export default function GameApp() {
     }
   }, [ensureOnlineConnection]);
 
+  useEffect(() => {
+    if (!online) return;
+    ensureOnlineConnection().catch(() => showToast("Connection failed"));
+  }, [online, ensureOnlineConnection, showToast]);
+
+  useEffect(() => {
+    let cancelled = false;
+    try {
+      const pending = sessionStorage.getItem(PENDING_JOIN_KEY);
+      if (!pending) return;
+      const data = JSON.parse(pending);
+      if (data?.roomId && data?.playerId) {
+        void (async () => {
+          await ensureOnlineConnection();
+          if (cancelled) return;
+          playerIdRef.current = data.playerId;
+          roomIdRef.current = data.roomId;
+          speedRef.current = data.speed ?? speedRef.current;
+          if (canvasRef.current && data.canvasWidth && data.canvasHeight) {
+            canvasRef.current.width = data.canvasWidth;
+            canvasRef.current.height = data.canvasHeight;
+          }
+          setPlayerId(data.playerId);
+          setRoomId(data.roomId);
+          sessionStorage.removeItem(PENDING_JOIN_KEY);
+          resizeGameArea();
+          startGame();
+        })();
+      } else {
+        sessionStorage.removeItem(PENDING_JOIN_KEY);
+      }
+    } catch {
+      sessionStorage.removeItem(PENDING_JOIN_KEY);
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [ensureOnlineConnection, resizeGameArea, startGame]);
+
   const keyboardHandler = useCallback((key: string) => {
     if (gameRef.current) {
       gameRef.current.keyPressed(key);
@@ -331,6 +390,15 @@ export default function GameApp() {
     [keyboardHandler]
   );
 
+  const tapGestureHandler = useCallback(() => {
+    const bombKey = controls[0].bomb;
+    if (roomIdRef.current) {
+      gameClient.keyPressed(roomIdRef.current, bombKey, playerIdRef.current);
+    } else if (gameRef.current) {
+      gameRef.current.keyPressed(bombKey);
+    }
+  }, []);
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       keyboardListenerRef.current.listen(event, keyboardHandler);
@@ -339,7 +407,7 @@ export default function GameApp() {
       swipeListenerRef.current.listen(event);
     };
     const onTouchEnd = (event: TouchEvent) => {
-      swipeListenerRef.current.listen(event, swipeGestureHandler);
+      swipeListenerRef.current.listen(event, swipeGestureHandler, tapGestureHandler);
     };
     const onCanvasTouchMove = (event: TouchEvent) => {
       if (event.target === canvasRef.current) {
@@ -357,7 +425,7 @@ export default function GameApp() {
       window.removeEventListener("touchend", onTouchEnd);
       canvas?.removeEventListener("touchmove", onCanvasTouchMove);
     };
-  }, [keyboardHandler, swipeGestureHandler]);
+  }, [keyboardHandler, swipeGestureHandler, tapGestureHandler]);
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-[#060a08] text-zinc-200">
@@ -369,6 +437,7 @@ export default function GameApp() {
         onStart={startGame}
         onStop={stopGameStart}
         onToggleSettings={() => setDrawerOpen((open) => !open)}
+        onBrowseRooms={() => router.push("/rooms")}
       />
 
       <main className="flex min-h-0 flex-1 items-center justify-center p-2 sm:p-4">

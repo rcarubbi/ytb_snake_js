@@ -61,3 +61,12 @@ export interface RoomResponse {
   canvasHeight?: number;
   error?: string;
 }
+
+export interface RoomSummary {
+  roomId: string;
+  ownerId: string;
+  players: string[];
+  numberOfPlayers: number;
+  numberOfApples: number;
+  speed: number;
+}
