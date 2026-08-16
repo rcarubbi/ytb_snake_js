@@ -1,0 +1,35 @@
+name: probe
+
+on: workflow_dispatch
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Create test files
+        run: |
+          echo hello > probe.txt
+          mkdir -p nested
+          echo x > nested/f.txt
+      - name: Upload
+        uses: actions/upload-artifact@v7
+        with:
+          name: probe-art
+          path: .
+          include-hidden-files: true
+      - name: Download default
+        uses: actions/download-artifact@v7
+        with:
+          name: probe-art
+      - name: Show default layout
+        run: |
+          echo "PWD=$(pwd)"
+          find "$GITHUB_WORKSPACE" -maxdepth 2 -not -path "*/node_modules*" | sort | head -40
+      - name: Download into sub
+        uses: actions/download-artifact@v7
+        with:
+          name: probe-art
+          path: sub
+      - name: Show sub layout
+        run: find sub -maxdepth 3 | sort
