@@ -1,0 +1,75 @@
+"use client";
+
+import { GearIcon, SnakeIcon } from "./icons";
+
+interface HUDProps {
+  online: boolean;
+  roomId: string | null;
+  running: boolean;
+  drawerOpen: boolean;
+  onStart: () => void;
+  onStop: () => void;
+  onToggleSettings: () => void;
+}
+
+export default function HUD({
+  online,
+  roomId,
+  running,
+  drawerOpen,
+  onStart,
+  onStop,
+  onToggleSettings,
+}: HUDProps) {
+  return (
+    <header className="flex items-center justify-between gap-3 border-b border-zinc-800/80 bg-zinc-950/70 px-3 py-2.5 backdrop-blur sm:px-5">
+      <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+        <SnakeIcon className="h-7 w-7 shrink-0 text-emerald-400 drop-shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
+        <div className="min-w-0">
+          <h1 className="font-display truncate text-base font-extrabold tracking-[0.2em] neon-text sm:text-xl">
+            SNAKE ARENA
+          </h1>
+          <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500">
+            <span className={online ? "neon-cyan" : "text-zinc-400"}>
+              {online ? "online" : "local"}
+            </span>
+            {roomId ? <span className="text-emerald-400"> · room {roomId}</span> : null}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex shrink-0 items-center gap-2">
+        <button
+          id="start-button"
+          type="button"
+          onClick={onStart}
+          disabled={running}
+          className="rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-400 px-4 py-2 font-display text-xs font-bold uppercase tracking-widest text-emerald-950 shadow-[0_0_14px_rgba(16,185,129,0.35)] transition hover:shadow-[0_0_22px_rgba(16,185,129,0.6)] active:scale-95 disabled:pointer-events-none disabled:opacity-30 sm:px-5"
+        >
+          Start
+        </button>
+        <button
+          id="stop-button"
+          type="button"
+          onClick={onStop}
+          disabled={!running}
+          className="rounded-lg bg-gradient-to-r from-rose-700 to-rose-500 px-4 py-2 font-display text-xs font-bold uppercase tracking-widest text-rose-50 shadow-[0_0_14px_rgba(225,29,72,0.3)] transition hover:shadow-[0_0_22px_rgba(225,29,72,0.55)] active:scale-95 disabled:pointer-events-none disabled:opacity-30 sm:px-5"
+        >
+          Stop
+        </button>
+        <button
+          type="button"
+          aria-label="Settings"
+          onClick={onToggleSettings}
+          className={`rounded-lg border p-2 transition active:scale-95 ${
+            drawerOpen
+              ? "border-emerald-400/70 bg-emerald-400/10 text-emerald-300 shadow-[0_0_14px_rgba(16,185,129,0.4)]"
+              : "border-zinc-700 text-zinc-300 hover:border-emerald-500/60 hover:text-emerald-300 hover:shadow-[0_0_14px_rgba(16,185,129,0.25)]"
+          }`}
+        >
+          <GearIcon className="h-5 w-5" spinning={running} />
+        </button>
+      </div>
+    </header>
+  );
+}

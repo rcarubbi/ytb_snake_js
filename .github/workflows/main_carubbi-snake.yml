@@ -19,13 +19,12 @@ jobs:
       - name: Set up Node.js version
         uses: actions/setup-node@v4
         with:
-          node-version: '16.x'
+          node-version: '24.x'
 
-      - name: npm install, build, and test
+      - name: Install dependencies and build
         run: |
           npm install
-          
-          
+          npm run build
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4

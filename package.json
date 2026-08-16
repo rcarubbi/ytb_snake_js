@@ -1,16 +1,30 @@
 {
   "name": "snake-server",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "",
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node --experimental-modules ./multiplayer/backend/server.mjs"
+    "dev": "concurrently -k -n server,client -c green,cyan \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:server": "tsx watch multiplayer/backend/src/server.ts",
+    "dev:client": "npm --prefix multiplayer/client run dev -- -p 3001",
+    "build": "npm run build:server && npm run build:client",
+    "build:server": "tsc -p multiplayer/backend/tsconfig.json",
+    "build:client": "npm --prefix multiplayer/client run build",
+    "typecheck:server": "tsc -p multiplayer/backend/tsconfig.json --noEmit",
+    "start": "node multiplayer/backend/dist/server.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.17.2",
-    "socket.io": "^4.4.0"
+    "express": "^5.2.1",
+    "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^24.0.0",
+    "concurrently": "^9.1.2",
+    "tsx": "^4.23.12",
+    "typescript": "^7.0.2"
   }
 }

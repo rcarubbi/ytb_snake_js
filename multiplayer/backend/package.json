@@ -1,0 +1,7 @@
+{
+  "name": "snake-backend",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Socket.io multiplayer snake game backend (TypeScript)"
+}
