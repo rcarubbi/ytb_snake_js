@@ -16,6 +16,10 @@
   },
   "author": "",
   "license": "ISC",
+  "workspaces": [
+    "multiplayer/client",
+    "multiplayer/backend"
+  ],
   "dependencies": {
     "express": "^5.2.1",
     "socket.io": "^4.8.3"
