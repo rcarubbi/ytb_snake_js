@@ -18,14 +18,6 @@ jobs:
           name: probe-art
           path: .
           include-hidden-files: true
-      - name: Download default
-        uses: actions/download-artifact@v7
-        with:
-          name: probe-art
-      - name: Show default layout
-        run: |
-          echo "PWD=$(pwd)"
-          find "$GITHUB_WORKSPACE" -maxdepth 2 -not -path "*/node_modules*" | sort | head -40
       - name: Download into sub
         uses: actions/download-artifact@v7
         with:
