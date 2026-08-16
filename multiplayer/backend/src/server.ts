@@ -2,6 +2,7 @@ import express from "express";
 import fs from "fs";
 import http from "http";
 import path from "path";
+import { fileURLToPath } from "url";
 import { Server, type Socket } from "socket.io";
 import Lobby from "./Lobby.js";
 import type { GameSettings, RoomResponse } from "./game/types.js";
@@ -10,7 +11,7 @@ const app = express();
 const httpServer = http.createServer(app);
 
 // serve the statically exported Next.js client (multiplayer/client/out) when built
-const clientOut = path.resolve(import.meta.dirname, "../../client/out");
+const clientOut = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../client/out");
 const clientIndex = path.join(clientOut, "index.html");
 if (fs.existsSync(clientIndex)) {
   app.use(express.static(clientOut));
