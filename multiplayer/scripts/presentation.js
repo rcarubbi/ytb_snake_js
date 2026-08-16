@@ -153,11 +153,12 @@ const presentation = {
         // stretch the canvas to fill the tv inner area exactly in both dimensions
         // footer is pinned by flex layout, so footer.top - tv.top is deterministic;
         // cap height by aspect ratio so tall/narrow layouts don't over-stretch
+        const tvMarginBottom = parseFloat(getComputedStyle(tv).marginBottom) || 0;
         const footerTop = footer.getBoundingClientRect().top;
         const tvTop = tv.getBoundingClientRect().top;
         const availableWidth = tv.clientWidth;
         const availableHeight = Math.max(100, Math.min(
-            footerTop - tvTop - 30,
+            footerTop - tvTop - 30 - tvMarginBottom,
             tv.clientWidth * (canvas.height / canvas.width)
         ));
         screen.style.width = `${availableWidth}px`;

@@ -56,7 +56,13 @@
 
 #tv {
     background-color: white;
-    border: black solid 15px
+    border: black solid 15px;
+    margin-bottom: 16px;
+}
+
+#start-button,
+#stop-button {
+    margin-top: 16px;
 }
  
 .controls {
