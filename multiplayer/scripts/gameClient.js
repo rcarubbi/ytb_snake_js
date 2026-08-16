@@ -1,15 +1,15 @@
 import { io } from "https://cdn.socket.io/4.3.2/socket.io.esm.min.js";
 let socket = null
 
-async function asyncEmit(eventName, data) {
-    return await (new Promise(function (resolve, reject) {
-        socket.emit(eventName, data);
-        socket.on(eventName, result => {
-            socket.off(eventName);
-            
+function asyncEmit(eventName, data) {
+    return new Promise(function (resolve) {
+        const handler = (result) => {
+            socket.off(eventName, handler);
             resolve(result);
-        });
-    })); 
+        };
+        socket.on(eventName, handler);
+        socket.emit(eventName, data);
+    });
 }
 
 const gameClient = {
@@ -20,7 +20,9 @@ const gameClient = {
                 socket.on("connection", (id) => {
                     resolve(id);
                 });
-               
+                socket.on("connect_error", (err) => {
+                    reject(err);
+                });
             } catch (e) {
                 reject(e);
             }
@@ -38,6 +40,9 @@ const gameClient = {
             }
         }));
     },
+    onStateChange: function (callback) {
+        socket.on("gameState", callback);
+    },
     createRoom: async function (gameSettings) {
         return await asyncEmit("createRoom", gameSettings);
     },
@@ -48,7 +53,7 @@ const gameClient = {
         return await asyncEmit("joinRoom", { roomId, playerId });
     },
     keyPressed: function (roomId, key, playerId) {
-        return asyncEmit("keyPressed", {roomId, playerId, key});
+        socket.emit("keyPressed", {roomId, playerId, key});
     },
     updateState: async function (roomId) {
         return await asyncEmit("updateState", roomId);

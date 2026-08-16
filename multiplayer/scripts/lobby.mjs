@@ -12,6 +12,9 @@ function generateUniqueRoomId() {
 }
 
 const lobby = {
+    getRoom(roomId) {
+        return rooms[roomId];
+    },
     createRoom: function (gameSettings) {
         const roomId = generateUniqueRoomId();
         rooms[roomId] = new Room(gameSettings.playerId, roomId, gameSettings);
@@ -19,7 +22,7 @@ const lobby = {
     },
     joinRoom(roomId, playerId) {
         const room = rooms[roomId];
-        if (!room) return;
+        if (!room) return { error: 'Room not found' };
         const joinRoomResponse = room.joinRoom(playerId);
         return joinRoomResponse;
     },
@@ -36,6 +39,11 @@ const lobby = {
         if (!room) return;
         return room.updateState();
 
+    },
+    getState(roomId) {
+        const room = rooms[roomId];
+        if (!room) return;
+        return room.getState();
     },
     keyPressed(roomId, key, playerId) {
         const room = rooms[roomId];

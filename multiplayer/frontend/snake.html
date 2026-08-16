@@ -21,7 +21,7 @@
                     <div id="screen" class="card-content">
                         <div id="scanline"></div>
                         <span class="card-title">Snake Game</span>
-                        <canvas id="canvas" width="560" height="520"></canvas>
+                        <canvas id="canvas" width="1120" height="1040"></canvas>
                     </div>
                 </div>
             </div>
@@ -63,8 +63,8 @@
                             </div>
                             <div class="row">
                                 <div class="input-field col s12">
-                                    <input type="text" id="player-id" disabled>
-                                    <label for="player-id">Player ID</label>
+                                    <input type="text" id="player-id" maxlength="8">
+                                    <label for="player-id">Player Name</label>
                                 </div>
                             </div>
                             <div class="row">
@@ -100,14 +100,15 @@
                                         room</button>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col s12">
-
-                            <button id="start-button" class="waves-effect waves-light btn green darken-1">Start</button>
-                            <button id="stop-button" class="waves-effect waves-light btn green darken-1"
-                                disabled>Stop</button>
+                            <div class="row">
+                                <div class="col s6">
+                                    <button id="start-button" class="waves-effect waves-light btn green darken-1">Start</button>
+                                </div>
+                                <div class="col s6">
+                                    <button id="stop-button" class="waves-effect waves-light btn green darken-1"
+                                        disabled>Stop</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

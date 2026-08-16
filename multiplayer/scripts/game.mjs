@@ -13,6 +13,8 @@ export default class Game {
         this.snakes = [];
         this.apples = [];
         this.bombs = [];
+        // top strip reserved for the score line; the play area starts below it
+        this.playAreaTop = 40;
     }
 
     initializeApples() {
@@ -38,8 +40,10 @@ export default class Game {
     addSnake(playerId, keyMap) {
         const snakeIndex = this.snakes.length;
         playerId = playerId || `Player${snakeIndex + 1}`;
-        const snakeInitialX = (snakeIndex * 100) + 20;
-        this.snakes.push(new Snake(playerId, snakeInitialX, 20, 20, colors[snakeIndex], keyMap || controls[snakeIndex]));
+        const cellsPerRow = Math.floor(this.canvasWidth / 100);
+        const snakeInitialX = 20 + (snakeIndex % cellsPerRow) * 100;
+        const snakeInitialY = this.playAreaTop + 20 + Math.floor(snakeIndex / cellsPerRow) * 120;
+        this.snakes.push(new Snake(playerId, snakeInitialX, snakeInitialY, 20, colors[snakeIndex], keyMap || controls[snakeIndex]));
         if (this.snakes.length == 1) {
             this.initializeApples();
         }
@@ -47,7 +51,7 @@ export default class Game {
     }
 
     addApple() {
-        this.apples.push(new Apple(this.getAliveSnakes(), 20, this.canvasWidth, this.canvasHeight));
+        this.apples.push(new Apple(this.getAliveSnakes(), 20, this.canvasWidth, this.canvasHeight, this.playAreaTop));
     }
 
     checkEatenApples() {
@@ -93,10 +97,10 @@ export default class Game {
             snake.head.x = this.canvasWidth - snake.size;
         } else if (snake.head.x >= this.canvasWidth) {
             snake.head.x = 0;
-        } else if (snake.head.y <= -snake.size) {
+        } else if (snake.head.y < this.playAreaTop) {
             snake.head.y = this.canvasHeight - snake.size;
         } else if (snake.head.y >= this.canvasHeight) {
-            snake.head.y = 0;
+            snake.head.y = this.playAreaTop;
         }
     }
 
@@ -121,6 +125,10 @@ export default class Game {
         this.checkCollisions();
         this.checkEatenApples();
         this.checkExplodedBombs();
+        return this.getState();
+    }
+
+    getState() {
         return {
             snakes: this.snakes,
             apples: this.apples,

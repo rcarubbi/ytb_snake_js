@@ -35,6 +35,7 @@ let playerId = null;
 let currentRoomId = null;
 let currentGame = null;
 let currentSpeed = 15;
+let latestState = null;
 
 function getGameSettings() {
     const numberOfPlayers = document.getElementById('players').value;
@@ -55,6 +56,26 @@ function startLocalGame() {
     currentSpeed = gameSettings.speed;
     currentGame = new Game(gameSettings);
     currentGame.start();
+}
+
+let connectPromise = null;
+async function ensureOnlineConnection() {
+    if (!connectPromise) {
+        connectPromise = gameClient.connectAsync().then(() => {
+            gameClient.onStateChange((state) => {
+                latestState = state;
+            });
+        });
+    }
+    return connectPromise;
+}
+
+function showToast(message) {
+    M.toast({ html: `<span>${message}</span>`, classes: 'red rounded' });
+}
+
+function readPlayerName() {
+    return playerIdInput.value.trim();
 }
 
 function keyboardHandler(key) {
@@ -88,17 +109,20 @@ async function stopOnlineGameStart() {
 
 
 
-async function gameLoop(timestamp) {
-    
-    if (timestamp < lastFrameTimestamp + (1000 / currentSpeed)) {
-        animationHandle = requestAnimationFrame(gameLoop);
-        return;
-    }
+function gameLoop(timestamp) {
+    if (currentGame) {
+        if (timestamp < lastFrameTimestamp + (1000 / currentSpeed)) {
+            animationHandle = requestAnimationFrame(gameLoop);
+            return;
+        }
 
-    lastFrameTimestamp = timestamp;
-    const newState = currentGame ? currentGame.updateState() : await gameClient.updateState(currentRoomId);
-    if (newState) {
-        draw(newState);
+        lastFrameTimestamp = timestamp;
+        const newState = currentGame.updateState();
+        if (newState) {
+            draw(newState);
+        }
+    } else if (latestState) {
+        draw(latestState);
     }
     animationHandle = requestAnimationFrame(gameLoop);
 }
@@ -126,14 +150,18 @@ function stopGameloop() {
 }
 const presentation = {
     resizeGameArea: function () {
-        const width = tv.clientWidth + 5;
-        const height = main.clientHeight < width
-            ? main.clientHeight - footer.offsetHeight - 10
-            : tv.clientHeight;
-        screen.style.width = `${width}px`;
-        screen.style.height = `${height}px`;
-        canvas.width = screen.clientWidth % 20 == 0 ? screen.clientWidth : screen.clientWidth - 20 - screen.clientWidth % 20;
-        canvas.height = screen.clientHeight % 20 == 0 ? screen.clientHeight : screen.clientHeight - 60 - screen.clientHeight % 20;
+        // stretch the canvas to fill the tv inner area exactly in both dimensions
+        // footer is pinned by flex layout, so footer.top - tv.top is deterministic;
+        // cap height by aspect ratio so tall/narrow layouts don't over-stretch
+        const footerTop = footer.getBoundingClientRect().top;
+        const tvTop = tv.getBoundingClientRect().top;
+        const availableWidth = tv.clientWidth;
+        const availableHeight = Math.max(100, Math.min(
+            footerTop - tvTop - 30,
+            tv.clientWidth * (canvas.height / canvas.width)
+        ));
+        screen.style.width = `${availableWidth}px`;
+        screen.style.height = `${availableHeight}px`;
     },
     createRoom: async function () {
         createRoom.disabled = true;
@@ -142,12 +170,38 @@ const presentation = {
         roomIdToJoinInput.disabled = true;
         playerIdInput.disabled = true;
         roomIdInput.disabled = true;
-        playerId = playerIdInput.value;
+        playerId = readPlayerName();
+        if (!playerId) {
+            showToast('Enter a player name first');
+            createRoom.disabled = false;
+            joinRoom.disabled = false;
+            leaveRoom.disabled = true;
+            roomIdToJoinInput.disabled = false;
+            playerIdInput.disabled = false;
+            roomIdInput.disabled = false;
+            return;
+        }
+        await ensureOnlineConnection();
         const roomCreationResponse = await gameClient.createRoom(getGameSettings());
+        if (!roomCreationResponse || roomCreationResponse.error) {
+            showToast(roomCreationResponse ? roomCreationResponse.error : 'Failed to create room');
+            createRoom.disabled = false;
+            joinRoom.disabled = false;
+            leaveRoom.disabled = true;
+            roomIdToJoinInput.disabled = false;
+            playerIdInput.disabled = false;
+            roomIdInput.disabled = false;
+            return;
+        }
         playerId = roomCreationResponse.playerId;
         currentRoomId = roomCreationResponse.roomId;
+        currentSpeed = roomCreationResponse.speed;
+        canvas.width = roomCreationResponse.canvasWidth;
+        canvas.height = roomCreationResponse.canvasHeight;
+        presentation.resizeGameArea();
         roomIdInput.value = currentRoomId;
         roomIdLabel.classList.add("active");
+        presentation.startGame();
     },
     leaveRoom: async function () {
         createRoom.disabled = false;
@@ -165,11 +219,31 @@ const presentation = {
         joinRoom.disabled = true;
         leaveRoom.disabled = false;
         roomIdToJoinInput.disabled = true;
+        playerId = readPlayerName();
+        if (!playerId) {
+            showToast('Enter a player name first');
+            createRoom.disabled = false;
+            joinRoom.disabled = false;
+            leaveRoom.disabled = true;
+            roomIdToJoinInput.disabled = false;
+            return;
+        }
+        await ensureOnlineConnection();
         const joinRoomResponse  = await gameClient.joinRoom(roomIdToJoinInput.value, playerId);
+        if (!joinRoomResponse || joinRoomResponse.error) {
+            showToast(joinRoomResponse ? joinRoomResponse.error : 'Room not found');
+            createRoom.disabled = false;
+            joinRoom.disabled = false;
+            leaveRoom.disabled = true;
+            roomIdToJoinInput.disabled = false;
+            return;
+        }
         currentRoomId = joinRoomResponse.roomId;
         playerId = joinRoomResponse.playerId;
         currentSpeed = joinRoomResponse.speed;
-        playerIdInput.value = playerId;
+        canvas.width = joinRoomResponse.canvasWidth;
+        canvas.height = joinRoomResponse.canvasHeight;
+        presentation.resizeGameArea();
         roomIdInput.value = currentRoomId;
         roomIdLabel.classList.add("active");
         presentation.startGame();
@@ -179,24 +253,6 @@ const presentation = {
             if (!online.checked) {
                 startLocalGame();
             }
-
-           
-            const keyboardListener = new KeyboardListener();
-            const swipeGestureListener = new SwipeGestureListener();
-
-            // listen for swipe gestures
-            window.addEventListener('touchstart', function (e) {
-                swipeGestureListener.listen(e);
-            });
-
-            window.addEventListener('touchend', function (e) {
-                swipeGestureListener.listen(e, swipeGestureHandler);
-            });
-
-
-            window.addEventListener("keydown", function (event) {
-                keyboardListener.listen(event, keyboardHandler);
-            });
 
             animationHandle = requestAnimationFrame(gameLoop);
             screen.classList.add("crt");
@@ -216,14 +272,14 @@ const presentation = {
     connectOnlineGame: async function (event) {
         const online = event.target.checked;
 
-        playerIdInput.disabled =
-            roomIdToJoinInput.disabled =
+        playerIdInput.disabled = false;
+        roomIdToJoinInput.disabled =
             createRoom.disabled =
             joinRoom.disabled = !online;
 
         if (online) {
-            // connect socket 
-            await gameClient.connectAsync();
+            // connect socket
+            await ensureOnlineConnection();
 
         } else {
             // disconnect socket
@@ -235,10 +291,9 @@ const presentation = {
             }
 
             await gameClient.disconnectAsync();
-            // playerId = null;
-            // playerIdLabel.classList.remove("active");
+            connectPromise = null;
+            playerId = null;
         }
-        playerIdInput.value = playerId;
 
     },
     stopGameStart: async function () {
@@ -259,6 +314,7 @@ const presentation = {
         screen.classList.remove("turn-off");
         tv.style.backgroundColor = "white";
         currentGame = null;
+        latestState = null;
     },
     disablePageScrollOnCanvas: function () {
         canvas.addEventListener('touchmove', function (e) {
@@ -268,5 +324,21 @@ const presentation = {
 
 
 }
+
+const keyboardListener = new KeyboardListener();
+const swipeGestureListener = new SwipeGestureListener();
+
+// listen for swipe gestures
+window.addEventListener('touchstart', function (e) {
+    swipeGestureListener.listen(e);
+});
+
+window.addEventListener('touchend', function (e) {
+    swipeGestureListener.listen(e, swipeGestureHandler);
+});
+
+window.addEventListener("keydown", function (event) {
+    keyboardListener.listen(event, keyboardHandler);
+});
 
 export default presentation;

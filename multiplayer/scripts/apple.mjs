@@ -1,9 +1,10 @@
 export default class Apple {
-    constructor(snakes, size, width, height) {
+    constructor(snakes, size, width, height, top) {
         this.color = "pink";
         this.size = size;
         this.width = width;
         this.height = height;
+        this.top = top;
         this.setEmptyPlace(snakes);
     }
 
@@ -15,7 +16,7 @@ export default class Apple {
             const xCandidate = Math.floor(Math.random() * this.width / this.size) * this.size;
             const yCandidate = Math.floor(Math.random() * this.height / this.size) * this.size;
          
-            if (this.isEmptyPlace(snakes, xCandidate, yCandidate) && yCandidate > 0) {
+            if (this.isEmptyPlace(snakes, xCandidate, yCandidate) && yCandidate >= this.top) {
                 this.x = xCandidate;
                 this.y = yCandidate;
                 break;

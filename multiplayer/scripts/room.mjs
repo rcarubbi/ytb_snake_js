@@ -9,17 +9,34 @@ export default class Room {
     }
 
     joinRoom(playerId) {
-        //check if player is already in room
-        if (this.game.snakes.find(snake => snake.playerId == playerId)) {
-            return;
+        const name = playerId && playerId.trim();
+        if (!name) {
+            return { error: 'Player name is required' };
+        }
+        if (name.length > 8) {
+            return { error: 'Player name must be at most 8 characters' };
+        }
+        //check if name is already in room
+        if (this.game.snakes.find(snake => snake.playerId == name)) {
+            return { error: 'Name already taken' };
         }
 
-        const acceptedPlayerId = this.game.addSnake(playerId, controls[0]);
+        if (this.game.snakes.length >= this.game.numberOfPlayers) {
+            return { error: 'Room is full' };
+        }
+
+        const acceptedPlayerId = this.game.addSnake(name, controls[0]);
         return {
             speed: this.speed,
             roomId: this.roomId,
             playerId: acceptedPlayerId,
+            canvasWidth: this.game.canvasWidth,
+            canvasHeight: this.game.canvasHeight,
         }
+    }
+
+    getState() {
+        return this.game.getState();
     }
 
     leaveRoom(playerId) {
