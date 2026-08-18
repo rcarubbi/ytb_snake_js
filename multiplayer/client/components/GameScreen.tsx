@@ -23,7 +23,7 @@ export default function GameScreen({
     <div
       ref={tvRef}
       id="tv"
-      className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-2xl border border-emerald-500/20 bg-[#070b09] p-2 shadow-[inset_0_0_80px_rgba(0,0,0,0.95),0_0_45px_rgba(16,185,129,0.10)] sm:p-4"
+      className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-2xl border border-emerald-500/20 bg-[#070b09] p-1 shadow-[inset_0_0_80px_rgba(0,0,0,0.95),0_0_45px_rgba(16,185,129,0.10)] sm:p-2"
     >
       <div
         ref={screenRef}

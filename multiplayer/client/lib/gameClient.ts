@@ -70,6 +70,10 @@ const gameClient = {
     socket?.on("gameState", callback);
   },
 
+  offStateChange: function (callback: (state: GameState) => void) {
+    socket?.off("gameState", callback);
+  },
+
   onRoomListChanged: function (callback: (rooms: RoomSummary[]) => void) {
     socket?.on("roomListChanged", callback);
   },

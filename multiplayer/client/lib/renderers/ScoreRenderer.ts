@@ -10,16 +10,21 @@ export default class ScoreRenderer {
   }
 
   draw(state: GameState) {
-    this.ctx.font = "20px monospace";
+    this.ctx.font = "16px monospace";
     this.ctx.fillStyle = "white";
-    const baseOffset = this.ctx.measureText("Score ").width;
-    let x = baseOffset + 10;
+    const lineHeight = 22;
+    let x = 10;
+    let y = 18;
     for (const snake of state.snakes) {
       this.ctx.fillStyle = snake.color;
-      const label = `${snake.playerId}: ${snake.tail.length - 1} bomb:${snake.remainingBombs}`;
-      this.ctx.fillText(label, x, 18);
-      x += this.ctx.measureText(label).width + 30;
-      if (x > this.canvas.width) break;
+      const label = `${snake.playerId}:${snake.tail.length - 1} b:${snake.remainingBombs}`;
+      const w = this.ctx.measureText(label).width;
+      if (x + w > this.canvas.width - 10) {
+        x = 10;
+        y += lineHeight;
+      }
+      this.ctx.fillText(label, x, y);
+      x += w + 16;
     }
   }
 }

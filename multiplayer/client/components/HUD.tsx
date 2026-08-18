@@ -1,15 +1,13 @@
 "use client";
 
-import { GearIcon, RoomsIcon, SnakeIcon } from "./icons";
+import { RoomsIcon, SnakeIcon } from "./icons";
 
 interface HUDProps {
   online: boolean;
   roomId: string | null;
   running: boolean;
-  drawerOpen: boolean;
   onStart: () => void;
   onStop: () => void;
-  onToggleSettings: () => void;
   onBrowseRooms: () => void;
 }
 
@@ -17,10 +15,8 @@ export default function HUD({
   online,
   roomId,
   running,
-  drawerOpen,
   onStart,
   onStop,
-  onToggleSettings,
   onBrowseRooms,
 }: HUDProps) {
   return (
@@ -69,18 +65,6 @@ export default function HUD({
           className="rounded-lg bg-gradient-to-r from-rose-700 to-rose-500 px-4 py-2 font-display text-xs font-bold uppercase tracking-widest text-rose-50 shadow-[0_0_14px_rgba(225,29,72,0.3)] transition hover:shadow-[0_0_22px_rgba(225,29,72,0.55)] active:scale-95 disabled:pointer-events-none disabled:opacity-30 sm:px-5"
         >
           Stop
-        </button>
-        <button
-          type="button"
-          aria-label="Settings"
-          onClick={onToggleSettings}
-          className={`rounded-lg border p-2 transition active:scale-95 ${
-            drawerOpen
-              ? "border-emerald-400/70 bg-emerald-400/10 text-emerald-300 shadow-[0_0_14px_rgba(16,185,129,0.4)]"
-              : "border-zinc-700 text-zinc-300 hover:border-emerald-500/60 hover:text-emerald-300 hover:shadow-[0_0_14px_rgba(16,185,129,0.25)]"
-          }`}
-        >
-          <GearIcon className="h-5 w-5" spinning={running} />
         </button>
       </div>
     </header>

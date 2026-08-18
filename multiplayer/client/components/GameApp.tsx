@@ -14,7 +14,6 @@ import controls from "@/lib/game/controls";
 import type { GameState } from "@/lib/game/types";
 import HUD from "./HUD";
 import GameScreen from "./GameScreen";
-import SettingsDrawer from "./SettingsDrawer";
 import Toast, { type ToastData } from "./Toast";
 
 const PLAYER_NAME_KEY = "snake.playerName";
@@ -40,14 +39,11 @@ export default function GameApp() {
       return "";
     }
   });
-  const [roomToJoin, setRoomToJoin] = useState("");
   const [roomId, setRoomId] = useState<string | null>(null);
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
-  const [busy, setBusy] = useState(false);
   const [crtOn, setCrtOn] = useState(false);
   const [turningOff, setTurningOff] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const [toast, setToast] = useState<ToastData | null>(null);
 
   const tvRef = useRef<HTMLDivElement>(null);
@@ -60,20 +56,17 @@ export default function GameApp() {
   const lastFrameRef = useRef<number | null>(null);
   const renderersRef = useRef<Renderers | null>(null);
 
-  const onlineRef = useRef(online);
   const speedRef = useRef(speed);
   const playersRef = useRef(players);
   const applesRef = useRef(apples);
   const playerNameRef = useRef(playerName);
   const roomIdRef = useRef<string | null>(null);
   const playerIdRef = useRef<string | null>(null);
-  const connectPromiseRef = useRef<Promise<void> | null>(null);
+  const connectPromiseRef = useRef<Promise<string> | null>(null);
+  const stateCallbackRef = useRef<((state: GameState) => void) | null>(null);
   const keyboardListenerRef = useRef(new KeyboardListener());
   const swipeListenerRef = useRef(new SwipeGestureListener());
 
-  useEffect(() => {
-    onlineRef.current = online;
-  }, [online]);
   useEffect(() => {
     speedRef.current = speed;
   }, [speed]);
@@ -122,13 +115,16 @@ export default function GameApp() {
 
   const ensureOnlineConnection = useCallback(async () => {
     if (!connectPromiseRef.current) {
-      connectPromiseRef.current = gameClient.connectAsync().then(() => {
-        gameClient.onStateChange((state) => {
-          latestStateRef.current = state;
-        });
-      });
+      connectPromiseRef.current = gameClient.connectAsync();
     }
-    return connectPromiseRef.current;
+    await connectPromiseRef.current;
+    if (!stateCallbackRef.current) {
+      const cb = (state: GameState) => {
+        latestStateRef.current = state;
+      };
+      stateCallbackRef.current = cb;
+      gameClient.onStateChange(cb);
+    }
   }, []);
 
   const resizeGameArea = useCallback(() => {
@@ -215,7 +211,7 @@ export default function GameApp() {
 
   const startGame = useCallback(() => {
     try {
-      if (!onlineRef.current) {
+      if (!online) {
         gameRef.current = new Game(getGameSettings());
         gameRef.current.start();
       }
@@ -226,107 +222,19 @@ export default function GameApp() {
     } catch (err) {
       alert(err);
     }
-  }, [getGameSettings]);
+  }, [getGameSettings, online]);
 
   const stopGameStart = useCallback(async () => {
     setRunning(false);
     setTurningOff(true);
-    if (onlineRef.current && roomIdRef.current) {
+    if (online && roomIdRef.current) {
       await gameClient.leaveRoom(roomIdRef.current, playerIdRef.current);
       roomIdRef.current = null;
       playerIdRef.current = null;
       setRoomId(null);
       setPlayerId(null);
     }
-  }, []);
-
-  const createRoom = useCallback(async () => {
-    if (!playerNameRef.current.trim()) {
-      showToast("Enter a player name first");
-      return;
-    }
-    setBusy(true);
-    await ensureOnlineConnection();
-    const response = await gameClient.createRoom(getGameSettings());
-    if (!response || response.error) {
-      showToast(response?.error || "Failed to create room");
-      setBusy(false);
-      return;
-    }
-    playerIdRef.current = response.playerId ?? null;
-    roomIdRef.current = response.roomId ?? null;
-    speedRef.current = response.speed ?? speedRef.current;
-    if (canvasRef.current && response.canvasWidth && response.canvasHeight) {
-      canvasRef.current.width = response.canvasWidth;
-      canvasRef.current.height = response.canvasHeight;
-    }
-    setPlayerId(playerIdRef.current);
-    setRoomId(roomIdRef.current);
-    setBusy(false);
-    resizeGameArea();
-    startGame();
-  }, [ensureOnlineConnection, getGameSettings, resizeGameArea, startGame, showToast]);
-
-  const joinRoom = useCallback(async () => {
-    if (!playerNameRef.current.trim()) {
-      showToast("Enter a player name first");
-      return;
-    }
-    if (!roomToJoin.trim()) {
-      showToast("Enter a room ID");
-      return;
-    }
-    setBusy(true);
-    await ensureOnlineConnection();
-    const response = await gameClient.joinRoom(roomToJoin.trim(), playerNameRef.current);
-    if (!response || response.error) {
-      showToast(response?.error || "Room not found");
-      setBusy(false);
-      return;
-    }
-    playerIdRef.current = response.playerId ?? null;
-    roomIdRef.current = response.roomId ?? null;
-    speedRef.current = response.speed ?? speedRef.current;
-    if (canvasRef.current && response.canvasWidth && response.canvasHeight) {
-      canvasRef.current.width = response.canvasWidth;
-      canvasRef.current.height = response.canvasHeight;
-    }
-    setPlayerId(playerIdRef.current);
-    setRoomId(roomIdRef.current);
-    setBusy(false);
-    resizeGameArea();
-    startGame();
-  }, [ensureOnlineConnection, resizeGameArea, roomToJoin, showToast, startGame]);
-
-  const leaveRoom = useCallback(async () => {
-    setBusy(true);
-    await stopGameStart();
-    if (roomIdRef.current) {
-      await gameClient.leaveRoom(roomIdRef.current, playerIdRef.current);
-    }
-    roomIdRef.current = null;
-    playerIdRef.current = null;
-    setRoomId(null);
-    setPlayerId(null);
-    setBusy(false);
-  }, [stopGameStart]);
-
-  const toggleOnline = useCallback(async (checked: boolean) => {
-    setOnline(checked);
-    if (checked) {
-      await ensureOnlineConnection();
-    } else {
-      if (roomIdRef.current) {
-        await gameClient.leaveRoom(roomIdRef.current, playerIdRef.current);
-        roomIdRef.current = null;
-        playerIdRef.current = null;
-        setRoomId(null);
-        setPlayerId(null);
-      }
-      await gameClient.disconnectAsync();
-      connectPromiseRef.current = null;
-    }
-  }, [ensureOnlineConnection]);
+  }, [online]);
 
   useEffect(() => {
     if (!online) return;
@@ -339,8 +247,31 @@ export default function GameApp() {
       const pending = sessionStorage.getItem(PENDING_JOIN_KEY);
       if (!pending) return;
       const data = JSON.parse(pending);
-      if (data?.roomId && data?.playerId) {
+      if (data?.local) {
+        setOnline(false);
+        setSpeed(data.speed ?? 15);
+        setPlayers(data.players ?? 2);
+        setApples(data.apples ?? 1);
+        sessionStorage.removeItem(PENDING_JOIN_KEY);
+        lastFrameRef.current = null;
+        setTurningOff(false);
+        setCrtOn(true);
+        setRunning(true);
+        setTimeout(() => {
+          if (cancelled) return;
+          gameRef.current = new Game({
+            numberOfPlayers: data.players ?? 2,
+            numberOfApples: data.apples ?? 1,
+            speed: data.speed ?? 15,
+            canvasWidth: canvasRef.current?.width ?? 1120,
+            canvasHeight: canvasRef.current?.height ?? 1040,
+            playerId: playerNameRef.current,
+          });
+          gameRef.current.start();
+        }, 0);
+      } else if (data?.roomId && data?.playerId) {
         void (async () => {
+          setOnline(true);
           await ensureOnlineConnection();
           if (cancelled) return;
           playerIdRef.current = data.playerId;
@@ -366,6 +297,31 @@ export default function GameApp() {
       cancelled = true;
     };
   }, [ensureOnlineConnection, resizeGameArea, startGame]);
+
+  useEffect(() => {
+    return () => {
+      if (stateCallbackRef.current) {
+        gameClient.offStateChange(stateCallbackRef.current);
+        stateCallbackRef.current = null;
+      }
+      if (online && roomIdRef.current) {
+        try {
+          sessionStorage.setItem(
+            PENDING_JOIN_KEY,
+            JSON.stringify({
+              roomId: roomIdRef.current,
+              playerId: playerIdRef.current,
+              speed: speedRef.current,
+              canvasWidth: canvasRef.current?.width ?? 1120,
+              canvasHeight: canvasRef.current?.height ?? 1040,
+            })
+          );
+        } catch {
+          // ignore
+        }
+      }
+    };
+  }, [online]);
 
   const keyboardHandler = useCallback((key: string) => {
     if (gameRef.current) {
@@ -433,10 +389,8 @@ export default function GameApp() {
         online={online}
         roomId={roomId}
         running={running}
-        drawerOpen={drawerOpen}
         onStart={startGame}
         onStop={stopGameStart}
-        onToggleSettings={() => setDrawerOpen((open) => !open)}
         onBrowseRooms={() => router.push("/rooms")}
       />
 
@@ -450,29 +404,6 @@ export default function GameApp() {
           turningOff={turningOff}
         />
       </main>
-
-      <SettingsDrawer
-        open={drawerOpen}
-        online={online}
-        running={running}
-        busy={busy}
-        speed={speed}
-        players={players}
-        apples={apples}
-        playerName={playerName}
-        roomId={roomId}
-        roomToJoin={roomToJoin}
-        onToggleOnline={toggleOnline}
-        onSpeedChange={setSpeed}
-        onPlayersChange={setPlayers}
-        onApplesChange={setApples}
-        onPlayerNameChange={setPlayerName}
-        onRoomToJoinChange={setRoomToJoin}
-        onCreateRoom={createRoom}
-        onJoinRoom={joinRoom}
-        onLeaveRoom={leaveRoom}
-        onClose={() => setDrawerOpen(false)}
-      />
 
       <Toast toast={toast} />
     </div>

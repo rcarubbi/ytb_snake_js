@@ -1,0 +1,7 @@
+node_modules
+multiplayer/client/node_modules
+multiplayer/backend/dist
+multiplayer/client/out
+multiplayer/client/.next
+.git
+.github
